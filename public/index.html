@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Hunts Point Geospatial Intelligence — Air Quality, Noise &amp; Freight</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    :root {
+      --bg-dark: #0f1419;
+      --bg-panel: #1a2332;
+      --bg-sidebar: #16213e;
+      --border: #2a3a4d;
+      --text: #e8eaed;
+      --text-muted: #9aa0a6;
+      --accent: #90caf9;
+      --accent-hover: #bbdefb;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: var(--bg-dark); color: var(--text); }
+    #app { display: flex; flex-direction: column; height: 100vh; }
+
+    .header {
+      padding: 1rem 1.5rem;
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+    }
+    .header h1 { margin: 0 0 0.35rem 0; font-size: 1.35rem; font-weight: 600; letter-spacing: -0.02em; }
+    .header .subtitle { font-size: 0.9rem; color: var(--text-muted); max-width: 720px; line-height: 1.45; }
+    .header .subtitle strong { color: var(--text); }
+
+    #map-wrap { display: flex; flex: 1; min-height: 0; }
+    #map { flex: 1; min-height: 320px; }
+
+    .sidebar {
+      width: 300px; min-width: 260px;
+      background: var(--bg-sidebar);
+      border-left: 1px solid var(--border);
+      padding: 1.25rem;
+      overflow-y: auto;
+      display: flex; flex-direction: column; gap: 1rem;
+    }
+    .sidebar h3 { margin: 0; font-size: 0.9rem; font-weight: 600; color: var(--accent); text-transform: uppercase; letter-spacing: 0.04em; }
+    .sidebar .value { font-size: 1.5rem; font-weight: 600; color: #fff; }
+    .sidebar .meta { font-size: 0.8rem; color: var(--text-muted); font-style: italic; }
+    .sidebar .links { font-size: 0.85rem; }
+    .sidebar .links a { color: var(--accent); text-decoration: none; }
+    .sidebar .links a:hover { text-decoration: underline; color: var(--accent-hover); }
+    .sidebar .placeholder { color: var(--text-muted); font-size: 0.9rem; }
+
+    .controls {
+      padding: 0.75rem 1.5rem;
+      background: var(--bg-panel);
+      border-top: 1px solid var(--border);
+      display: flex; flex-wrap: wrap; gap: 1rem; align-items: center;
+    }
+    .controls .label { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); }
+    .controls select {
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--bg-dark);
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+    .controls .toggle { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; cursor: pointer; }
+    .controls .toggle input { accent-color: var(--accent); }
+    .btn-text { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 0.85rem; padding: 0.25rem 0; text-decoration: underline; }
+    .btn-text:hover { color: var(--accent-hover); }
+
+    .about-panel {
+      padding: 1rem 1.5rem;
+      background: #0d1929;
+      border-top: 1px solid var(--border);
+      font-size: 0.85rem; line-height: 1.55;
+      display: none;
+    }
+    .about-panel.visible { display: block; }
+    .about-panel h4 { margin: 1rem 0 0.4rem 0; font-size: 0.9rem; color: var(--accent); font-weight: 600; }
+    .about-panel h4:first-child { margin-top: 0; }
+    .about-panel ul { margin: 0.35rem 0; padding-left: 1.35rem; color: var(--text-muted); }
+    .about-panel li { margin-bottom: 0.25rem; }
+
+    .leaflet-popup-content { margin: 0.6rem 0.75rem; min-width: 160px; font-size: 0.9rem; }
+    #map-legend {
+      padding: 10px 14px;
+      background: rgba(15,20,25,0.94);
+      border-radius: 8px;
+      font-size: 0.8rem;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    #map-legend .legend-title { font-weight: 600; margin-bottom: 6px; }
+    #map-legend .legend-bar { height: 10px; width: 100px; border-radius: 4px; margin-top: 4px; }
+    #map-legend .legend-labels { display: flex; justify-content: space-between; margin-top: 4px; font-size: 0.75rem; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <h1>Hunts Point Geospatial Intelligence</h1>
+      <p class="subtitle"><strong>Bronx, New York City.</strong> This map shows neighborhood-scale air quality (PM₂.₅), noise proxy, and freight corridors for the Hunts Point peninsula. Data is aggregated to H3 hexagonal cells; click a cell for values and resources.</p>
+    </header>
+    <div id="map-wrap">
+      <div id="map"></div>
+      <aside class="sidebar">
+        <h3>Neighborhood details</h3>
+        <p class="placeholder" id="sidebar-placeholder">Select a hexagon on the map to view the metric value and data source for that area.</p>
+        <div id="sidebar-content" style="display: none;">
+          <p class="value" id="sidebar-value">—</p>
+          <p class="meta" id="sidebar-datatype"></p>
+          <div class="links">
+            <h4 style="margin: 0.5rem 0 0.25rem 0; font-size: 0.85rem; color: var(--text-muted);">Resources</h4>
+            <ul style="margin: 0.25rem 0; padding-left: 1.2rem;">
+              <li><a href="https://www.nyc.gov/site/doh/health/health-topics/air-quality.page" target="_blank" rel="noopener">NYC Air Quality</a> — Health information and advisories</li>
+              <li><a href="https://www.nyc.gov/311" target="_blank" rel="noopener">NYC 311</a> — Report odors, noise, or environmental concerns</li>
+              <li><a href="https://www.nyc.gov/site/bronxcb2/index.page" target="_blank" rel="noopener">Bronx Community Board 2</a> — Hunts Point area</li>
+            </ul>
+          </div>
+        </div>
+      </aside>
+    </div>
+    <div class="controls">
+      <span class="label">Map layer</span>
+      <select id="layer-metric">
+        <option value="pm25_mean">Air pollution (PM₂.₅, µg/m³)</option>
+        <option value="noise_proxy">Noise proxy (road and traffic)</option>
+      </select>
+      <label class="toggle"><input type="checkbox" id="layer-trucks" checked /> Show truck routes</label>
+      <span style="color: var(--text-muted); font-size: 0.8rem;">Color scale: lower (yellow) → higher (red).</span>
+      <button type="button" class="btn-text" id="about-toggle" aria-expanded="false">About this map</button>
+    </div>
+    <div class="about-panel" id="about-data" role="region" aria-label="About this map">
+      <h4>Overview</h4>
+      <p style="margin: 0.35rem 0;">This platform provides a high-resolution view of environmental indicators for the Hunts Point peninsula. Hexagons use the H3 indexing system (~0.1 km² per cell). Only cells with road network data are shown; water and empty corners are excluded.</p>
+      <h4>Data per hexagon</h4>
+      <ul>
+        <li><strong>Road network</strong> — OpenStreetMap (OSMnx): total road length per cell.</li>
+        <li><strong>Noise proxy</strong> — Derived from road length (no direct decibel measurements).</li>
+        <li><strong>Air pollution (PM₂.₅)</strong> — NYC Open Data when available; otherwise a spatially adjusted proxy from road and noise so exposure patterns remain visible.</li>
+        <li><strong>Truck routes</strong> — OSM drive network shown as lines (freight corridors).</li>
+      </ul>
+      <h4>Data sources</h4>
+      <ul>
+        <li>NYC Open Data (air quality); OpenStreetMap (roads). H3 hexagonal grid for consistent neighborhood-scale units.</li>
+      </ul>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin;
+    const map = L.map('map', { center: [40.808, -73.88], zoom: 15 });
+    L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '© Esri' }).addTo(map);
+
+    const gridLayerGroup = L.layerGroup().addTo(map);
+    const truckLayerGroup = L.layerGroup().addTo(map);
+    let gridGeoJSON = null;
+
+    const METRIC_META = {
+      pm25_mean: { label: 'Air pollution (PM₂.₅ µg/m³)', unit: 'µg/m³', fmt: v => (typeof v === 'number' ? v.toFixed(1) : v) },
+      noise_proxy: { label: 'Noise proxy', unit: '', fmt: v => (typeof v === 'number' ? (v * 100).toFixed(0) + '%' : v) }
+    };
+
+    function interpolateColor(ratio) {
+      if (ratio <= 0) return '#ffff99';
+      if (ratio >= 1) return '#a50026';
+      if (ratio < 0.5) {
+        const t = ratio / 0.5;
+        return '#' + [255, Math.round(255 - 90 * t), Math.round(153 - 153 * t)].map(x => x.toString(16).padStart(2,'0')).join('');
+      }
+      const t = (ratio - 0.5) / 0.5;
+      const r = Math.round(255 - 90 * t), g = Math.round(165 - 165 * t), b = Math.round(38 * t);
+      return '#' + [r, g, b].map(x => Math.min(255, Math.max(0, x)).toString(16).padStart(2,'0')).join('');
+    }
+
+    function drawGridLayer(field) {
+      gridLayerGroup.clearLayers();
+      if (!gridGeoJSON || !gridGeoJSON.features || !gridGeoJSON.features.length) return;
+      const featuresWithValue = gridGeoJSON.features.filter(f => {
+        const v = f.properties[field];
+        return v != null && Number(v) > 0;
+      });
+      const values = featuresWithValue.map(f => f.properties[field]);
+      const min = values.length ? Math.min(...values) : 0;
+      const max = values.length ? Math.max(...values) : 1;
+      const meta = METRIC_META[field] || { label: field, unit: '', fmt: v => v };
+
+      featuresWithValue.forEach(f => {
+        const v = f.properties[field];
+        if (v == null || Number(v) <= 0) return;
+        const ratio = max > min ? (v - min) / (max - min) : 0.5;
+        const color = interpolateColor(ratio);
+        const fillOpacity = 0.5 + 0.4 * ratio;
+        const layer = L.geoJSON(f, { style: { color: color, weight: 0.5, fillColor: color, fillOpacity: fillOpacity } });
+        const props = f.properties;
+        layer.bindPopup(() => {
+          let html = '<p><strong>' + meta.label + '</strong></p><p>' + meta.fmt(v) + (meta.unit ? ' ' + meta.unit : '') + '</p>';
+          if (props.data_type) html += '<p><em>' + props.data_type + '</em></p>';
+          return html;
+        });
+        layer.on('click', function() {
+          document.getElementById('sidebar-placeholder').style.display = 'none';
+          document.getElementById('sidebar-content').style.display = 'block';
+          document.getElementById('sidebar-value').textContent = meta.fmt(v) + (meta.unit ? ' ' + meta.unit : '');
+          document.getElementById('sidebar-datatype').textContent = props.data_type || (field === 'noise_proxy' ? 'Proxy (road density)' : 'Observed');
+        });
+        layer.eachLayer(l => gridLayerGroup.addLayer(l));
+      });
+
+      updateLegend(field, min, max, meta);
+    }
+
+    let legendControl = null;
+    function updateLegend(field, minVal, maxVal, meta) {
+      const fmt = meta && meta.fmt ? meta.fmt : (v => v);
+      const html =
+        '<div class="legend-title">' + (meta && meta.label ? meta.label : field) + '</div>' +
+        '<div class="legend-bar" style="background:linear-gradient(to right, #ffff99, #ffa500, #a50026);"></div>' +
+        '<div class="legend-labels"><span>Lower ' + fmt(minVal) + '</span><span>Higher ' + fmt(maxVal) + '</span></div>';
+      if (legendControl) legendControl.getContainer().innerHTML = html;
+      else {
+        legendControl = L.control({ position: 'bottomright' });
+        legendControl.onAdd = function() {
+          const el = document.createElement('div');
+          el.id = 'map-legend';
+          el.className = 'leaflet-control-layers';
+          el.innerHTML = html;
+          return el;
+        };
+        legendControl.addTo(map);
+      }
+    }
+
+    function addTruckRoutes(geojson) {
+      truckLayerGroup.clearLayers();
+      if (!geojson.features || !geojson.features.length) return;
+      L.geoJSON(geojson, {
+        style: { color: '#9c27b0', weight: 4, opacity: 0.95 }
+      }).bindPopup('<p><strong>Freight corridor</strong></p><p>Road segment used by trucks and delivery vehicles.</p>').eachLayer(l => truckLayerGroup.addLayer(l));
+    }
+
+    function updateTruckVisibility() {
+      if (document.getElementById('layer-trucks').checked && truckLayerGroup.getLayers().length) truckLayerGroup.addTo(map);
+      else truckLayerGroup.remove();
+    }
+
+    document.getElementById('layer-metric').addEventListener('change', function() { drawGridLayer(this.value); });
+    document.getElementById('layer-trucks').addEventListener('change', updateTruckVisibility);
+    document.getElementById('about-toggle').addEventListener('click', function() {
+      const panel = document.getElementById('about-data');
+      const open = panel.classList.toggle('visible');
+      this.setAttribute('aria-expanded', open);
+      this.textContent = open ? 'Hide' : 'About this map';
+    });
+
+    async function loadLayers() {
+      try {
+        const [gridRes, truckRes] = await Promise.all([
+          fetch(API_BASE + '/api/layers/grid'),
+          fetch(API_BASE + '/api/layers/truck_routes')
+        ]);
+        const grid = await gridRes.json();
+        const trucks = await truckRes.json();
+        gridGeoJSON = grid;
+        if (grid.features && grid.features.length) drawGridLayer(document.getElementById('layer-metric').value);
+        if (trucks.features && trucks.features.length) addTruckRoutes(trucks);
+        updateTruckVisibility();
+      } catch (e) { console.error('Load layers failed', e); }
+    }
+    loadLayers();
+  </script>
+</body>
+</html>

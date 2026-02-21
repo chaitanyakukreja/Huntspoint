@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "outputDirectory": "public",
+  "rewrites": [
+    { "source": "/api/layers/grid", "destination": "/layers/grid_layers.geojson" },
+    { "source": "/api/layers/truck_routes", "destination": "/layers/truck_routes.geojson" },
+    { "source": "/api/bounds", "destination": "/api/bounds.json" }
+  ]
+}

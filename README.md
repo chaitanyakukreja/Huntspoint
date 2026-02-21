@@ -38,6 +38,10 @@ uvicorn backend.main:app --reload
 - **OpenStreetMap (OSMnx)** — Roads, truck routes, network centrality.
 - **Proxies** — Noise (traffic + road type), congestion (edge density/centrality); simulated components clearly labeled.
 
+## Deploy on Vercel
+
+Build layers, prepare `public/`, then deploy as a static site. See **[Deploy on Vercel](docs/DEPLOY_VERCEL.md)** for step-by-step instructions.
+
 ## Docs
 
 - [How to run](docs/HOW_TO_RUN.md) — Prerequisites, step-by-step setup, verification, data flow
