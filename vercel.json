@@ -1,9 +1,11 @@
 {
   "version": 2,
+  "buildCommand": "",
   "outputDirectory": "public",
+  "framework": null,
   "rewrites": [
-    { "source": "/api/layers/grid", "destination": "/layers/grid_layers.geojson" },
-    { "source": "/api/layers/truck_routes", "destination": "/layers/truck_routes.geojson" },
-    { "source": "/api/bounds", "destination": "/api/bounds.json" }
+    {"source": "/api/layers/grid", "destination": "/layers/grid_layers.geojson"},
+    {"source": "/api/layers/truck_routes", "destination": "/layers/truck_routes.geojson"},
+    {"source": "/api/bounds", "destination": "/api/bounds.json"}
   ]
 }
