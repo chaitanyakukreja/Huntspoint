@@ -1,0 +1,28 @@
+# Hunts Point Geospatial Intelligence Platform
+# Python 3.10+
+
+# Backend
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# Geospatial
+geopandas>=0.14.0
+shapely>=2.0.0
+osmnx>=1.6.0
+networkx>=3.2
+h3>=3.7.0
+
+# Data & API
+requests>=2.31.0
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Visualization (time series)
+plotly>=5.18.0
+matplotlib>=3.8.0
+
+# Optional: Google Earth Engine (uncomment if using)
+# earthengine-api>=0.1.350
+
+# Dev / optional
+python-multipart>=0.0.6
