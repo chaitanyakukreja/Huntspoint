@@ -1,0 +1,10 @@
+# Static deploy only — ignore backend so Vercel doesn't detect FastAPI
+backend/
+scripts/
+data/
+cache/
+config.py
+requirements.txt
+*.py
+.venv/
+__pycache__/
