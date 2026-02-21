@@ -146,14 +146,18 @@
     function drawGridLayer(field) {
       gridLayerGroup.clearLayers();
       if (!gridGeoJSON || !gridGeoJSON.features || !gridGeoJSON.features.length) return;
-      const values = gridGeoJSON.features.map(f => f.properties[field]).filter(v => v != null);
-      const min = Math.min(...values);
-      const max = Math.max(...values) || 1;
+      const featuresWithValue = gridGeoJSON.features.filter(f => {
+        const v = f.properties[field];
+        return v != null && Number(v) > 0;
+      });
+      const values = featuresWithValue.map(f => f.properties[field]);
+      const min = values.length ? Math.min(...values) : 0;
+      const max = values.length ? Math.max(...values) : 1;
       const meta = METRIC_META[field] || { label: field, unit: '', fmt: v => v };
 
-      gridGeoJSON.features.forEach(f => {
+      featuresWithValue.forEach(f => {
         const v = f.properties[field];
-        if (v == null) return;
+        if (v == null || Number(v) <= 0) return;
         const ratio = max > min ? (v - min) / (max - min) : 0.5;
         const color = interpolateColor(ratio);
         const fillOpacity = 0.5 + 0.4 * ratio;
@@ -177,6 +181,7 @@
 
       updateLegend(field, min, max, meta);
     }
+    // Note: hexagons with value 0 are not drawn (corner/water areas removed)
 
     let legendControl = null;
     function updateLegend(field, minVal, maxVal, meta) {
@@ -203,7 +208,7 @@
       truckLayerGroup.clearLayers();
       if (!geojson.features || !geojson.features.length) return;
       L.geoJSON(geojson, {
-        style: { color: '#ff9800', weight: 4, opacity: 0.9 }
+        style: { color: '#9c27b0', weight: 4, opacity: 0.95 }
       }).bindPopup('<p><strong>Truck / freight route</strong></p><p>Road used by trucks and delivery vehicles.</p>').eachLayer(l => truckLayerGroup.addLayer(l));
     }
 

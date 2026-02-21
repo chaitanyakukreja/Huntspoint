@@ -38,9 +38,15 @@ TIME_BINS = {
 # OSMnx network type for freight (driving = cars + trucks; we filter by highway type in code)
 NETWORK_TYPE = "drive"
 
+# NYC 311 - noise complaints (service requests with complaint_type containing "Noise")
+# 311 from 2020+: erm2-nwe9; use SoQL to filter noise and limit
+NYC_311_URL = "https://data.cityofnewyork.us/resource/erm2-nwe9.json"
+NYC_311_NOISE_LIMIT = 50000
+
 # Cache paths (relative to project root)
 DATA_DIR = "data"
 CACHE_AIR = "data/air_quality.json"
+CACHE_311_NOISE = "data/311_noise_complaints.json"
 CACHE_GRAPH = "data/osmnx_graph.gpkg"
 CACHE_GRID = "data/grid.geojson"
 CACHE_LAYERS = "data/layers"

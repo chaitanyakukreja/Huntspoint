@@ -56,6 +56,11 @@ def main():
     grid_gdf = add_pollution_proxy_when_flat(grid_gdf)
     grid_gdf = pollution_exposure_index(grid_gdf)
 
+    # Remove corner/water hexagons where there are no roads (index would be 0 or meaningless)
+    if "road_km" in grid_gdf.columns:
+        grid_gdf = grid_gdf[grid_gdf["road_km"].fillna(0) > 0].copy()
+        print(f"  Kept {len(grid_gdf)} hexagons with road data (dropped water/corners).")
+
     props = ["h3_cell", "cell_id", "pm25_mean", "congestion", "noise_proxy", "exposure_index", "data_type", "congestion_note", "noise_note", "road_km"]
     props = [c for c in props if c in grid_gdf.columns]
     geoj = grid_to_geojson(grid_gdf, props=props)
